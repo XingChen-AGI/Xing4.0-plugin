@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vllm-xing4_0-plugin"
+version = "0.1.0"
+description = "XingChen-Xing4_0 model support for vLLM, maintained out of tree"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+# The implementation is vendored from a vLLM fork based on upstream commit
+# 2e09247c2d7b6b97d13af6e71a85bf8d1271deb6. Keep vLLM version selection with
+# the operator and record the exact tested commit in the package.
+dependencies = ["vllm"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[project.entry-points."vllm.general_plugins"]
+xing4_0 = "vllm_xing4_0_plugin:register"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["vllm_xing4_0_plugin*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+extend-exclude = [
+  "src/vllm_xing4_0_plugin/xing4_0.py",
+  "src/vllm_xing4_0_plugin/xing4_0_reasoning_parser.py",
+  "src/vllm_xing4_0_plugin/xing4_0_tool_parser.py",
+]
+force-exclude = true
