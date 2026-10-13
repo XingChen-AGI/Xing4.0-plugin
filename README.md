@@ -9,11 +9,11 @@ registers:
 
 - `Xing4_0ForCausalLM`, the Xing4_0 model implementation;
 - the `xing4_0` Transformers configuration (`model_type: "xing4_0"`), reusing
-  vLLM/Transformers' `DeepseekV3Config` (MLA attention + MoE backbone);
+  vLLM's existing MLA-attention + MoE config infrastructure;
 - the `xing4_0` reasoning parser (think-block extraction);
 - the `xing4_0` tool-call parser (JSON, name+JSON and tag-based calls);
-- MTP (DeepSeek-style speculative decoding) support for `xing4_0` draft
-  checkpoints, and MLA recognition in the model-arch convertor.
+- MTP speculative decoding support for `xing4_0` draft checkpoints, and MLA
+  recognition in the model-arch convertor.
 
 The implementation is vendored from a vLLM fork based on upstream commit
 `2e09247c2d7b6b97d13af6e71a85bf8d1271deb6` and uses vLLM's existing runtime
@@ -22,8 +22,9 @@ custom CUDA kernels or require a separate build.
 
 ## Xing4_0 model capabilities
 
-Xing4_0 reuses the DeepSeek-V2/V3 backbone (MLA attention, MoE block, optional
-DSA indexer) and replaces the standard residual connection with
+Xing4_0 features MLA (Multi-head Latent Attention), a MoE (Mixture-of-Experts)
+block, an optional DSA indexer, and replaces the standard residual connection
+with
 Manifold-constrained Hyper-Connections (mHC): the residual stream is expanded
 into `hc_mult` parallel streams that are mixed by input-dependent,
 doubly-stochastic matrices produced by a Sinkhorn-Knopp projection.
@@ -92,7 +93,9 @@ vllm serve /path/to/xing4_0-model \
   --chat-template /path/to/chat_template.jinja
 ```
 
-MTP speculative decoding (when the checkpoint ships MTP layers):
+MTP speculative decoding (when the checkpoint ships MTP layers).
+`deepseek_mtp` is vLLM's internal method name for MTP-style draft models;
+Xing4_0 uses the same MTP architecture, so this identifier is required:
 
 ```bash
 vllm serve /path/to/xing4_0-model \
@@ -174,10 +177,12 @@ Two monkey-patches are applied at registration time (the only part without an
 upstream registration API):
 
 - `SpeculativeConfig.hf_config_override`: maps `xing4_0` MTP draft configs to
-  the `deepseek_mtp` path;
-- `ModelArchConfigConvertorBase.is_deepseek_mla`: reports `True` for `xing4_0`
-  configs carrying `kv_lora_rank`, enabling MLA attention and the derived
-  `head_size` (`kv_lora_rank + qk_rope_head_dim`).
+  vLLM's `deepseek_mtp` method path (vLLM's internal identifier for MTP-style
+  draft models);
+- `ModelArchConfigConvertorBase.is_deepseek_mla` (vLLM's internal MLA
+  detection method): reports `True` for `xing4_0` configs carrying
+  `kv_lora_rank`, enabling MLA attention and the derived `head_size`
+  (`kv_lora_rank + qk_rope_head_dim`).
 
 Both wrappers delegate to the originals for every other model type.
 
