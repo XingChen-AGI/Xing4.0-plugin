@@ -613,7 +613,7 @@ class Xing4_0Model(nn.Module):
             start=self.start_layer,
         ):
             if idx in self.aux_hidden_state_layers:
-                aux_hidden_states.append(hidden_states + residual)
+                aux_hidden_states.append(output_contract(hidden_states, n_streams))
             hidden_states, residual = layer(
                 positions, hidden_states, residual, llama_4_scaling
             )
@@ -628,7 +628,7 @@ class Xing4_0Model(nn.Module):
             # mHC mode never populated `residual`; final RMSNorm is single-arg.
             hidden_states = self.norm(hidden_states)
         else:
-            hidden_states = self.norm(hidden_states, residual)
+            hidden_states = self.norm(hidden_states)
 
         if len(aux_hidden_states) > 0:
             return hidden_states, aux_hidden_states
